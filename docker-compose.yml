@@ -1,0 +1,46 @@
+version: '3.7'
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/conf/default.conf:/etc/nginx/conf.d/default.conf
+  php:
+    build:
+      context: ./docker #The path to the Dockerfile
+    volumes:
+      - ./:/var/www/html #The path to the project files
+      - ./docker/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini #the path to the xdebug.ini file
+  mysql:
+    image: mysql:latest
+    ports:
+      - "3307:3307"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: webapp
+      MYSQL_USER: webapp
+      MYSQL_PASSWORD: root
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: root
+
+  duplicati:
+    image: ghcr.io/linuxserver/duplicati
+    container_name: duplicati
+    environment:
+      - PUID=0 # The PUID can be set to 0 which will give root permissions to the container
+      - PGID=0 # The PGID can be set to 0 which will give root permissions to the container
+      - TZ=Europe/Berlin # Set the appropriate timezone
+    volumes:
+      - ./docker/backups:/root/ # If the backup needs to be stored on your machine, add a volume mount to that path here
+      - ./docker/source:/root/ # Volume Mount to the folder that needs to backed up
+    ports:
+      - 8200:8200
+    restart: unless-stopped
